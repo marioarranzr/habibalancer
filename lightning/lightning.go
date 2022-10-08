@@ -13,7 +13,7 @@ import (
 )
 
 type AddressResponse struct {
-	Address string `json:'address'`
+	Address string `json:"address"`
 }
 
 // Set admin.macaroon hex
@@ -24,7 +24,6 @@ var (
 
 func loadMacaroon() (macaroon string) {
 	file, err := os.Open(GoDotEnvVariable("MACAROON_LOCATION"))
-
 	if err != nil {
 		return GoDotEnvVariable("MACAROON")
 	}
@@ -85,7 +84,7 @@ func sendPostRequest(endpoint string, payload string) (*http.Response, error) {
 		Transport: tr,
 	}
 
-	var jsonStr = []byte(payload)
+	jsonStr := []byte(payload)
 
 	req, err := http.NewRequest("POST", LNUrl+endpoint, bytes.NewBuffer(jsonStr))
 	if err != nil {
@@ -105,10 +104,8 @@ func sendPostRequest(endpoint string, payload string) (*http.Response, error) {
 // use godot package to load/read the .env file and
 // return the value of the key
 func GoDotEnvVariable(key string) string {
-
 	// load .env file
 	err := godotenv.Load(".env")
-
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}

@@ -32,38 +32,33 @@ func looper() (err error) {
 	for {
 		// Step 1: Find if we have a channel opened with Deezy
 		chanExists := deezy.IsChannelOpen(deezyPeer)
-		log.Println(chanExists)
+		log.Println("chanExists: ", chanExists)
 
 		// Step 2:  If we do not have an open channel, see if we have enough money to open one
 		if !chanExists {
-			Balance, err := lightning.GetBalance()
+			balance, err := lightning.GetBalance()
 			if err != nil {
-				log.Println("Unexpected error fetching on-chain balance")
-				log.Println(err)
+				log.Println("Unexpected error fetching on-chain balance: ", err)
 			}
-			log.Println("Onchain balance")
-			log.Println(Balance)
+			log.Println("Onchain balance: ", balance)
 
 			// Step 3: Open Channel to Danny
-			totalBalance, _ := strconv.Atoi(Balance.TotalBalance)
+			totalBalance, _ := strconv.Atoi(balance.TotalBalance)
 			if totalBalance > minLoopSize {
 				log.Println("Opening channel to Deezy")
 				resp, err := lightning.CreateChannel(deezyPeer, totalBalance-500000) // leave 500000 cushion
 				if err != nil {
-					log.Println("Error opening channel")
-					log.Println(err)
+					log.Println("Error opening channel: ", err)
 					continue
 				}
-				log.Println("Channel Opened Successfully!")
-				log.Println(resp)
+				log.Println("Channel Opened Successfully!: ", resp)
 
 			}
 		} else {
 			// Check if our open channel with Deezy's local balance is less than minimum close satoshis
 			channels, err := lightning.ListChannels(deezyPeer)
 			if err != nil {
-				log.Println("Unexpected error fetching channels")
-				log.Println(err)
+				log.Println("Unexpected error fetching channels: ", err)
 				continue
 			}
 			if len(channels.Channels) > 0 {
@@ -72,12 +67,10 @@ func looper() (err error) {
 				if balanceInt < localAmountMin {
 					result, err := deezy.CloseChannel(channels.Channels[0].ChannelPoint)
 					if err != nil {
-						log.Println("Error getting paid from Deezy")
-						log.Println(err)
+						log.Println("Error getting paid from Deezy: ", err)
 						continue
 					}
-					log.Println("Deezy paid us!")
-					log.Println(result)
+					log.Println("Deezy paid us!: ", result)
 				}
 			}
 		}
@@ -99,12 +92,12 @@ func looper() (err error) {
 		krakenAmtXBT := fmt.Sprintf("%.5f", krakenAmtXBTi)
 		krakenAmtXBTfee := fmt.Sprintf("%.0f", krakenAmtXBTi*maxLiqFeePpm*100) // fee is in satoshis, we want at least 50% profit
 		lnInvoice := kraken.GetAddress(krakenAmtXBT)
-		log.Println(lnInvoice)
+		log.Println("lnInvoice: ", lnInvoice)
 		// Try to pay invoice
 		for consecutiveErrors := 0; consecutiveErrors <= 10; consecutiveErrors++ {
 			_, err = lightning.SendPayReq(lnInvoice, krakenAmtXBTfee)
 			if err != nil {
-				log.Println(err)
+				log.Println("SendPayReq failed: ", err)
 				if consecutiveErrors == 9 {
 					time.Sleep(900 * time.Second)
 					continue
@@ -119,20 +112,17 @@ func looper() (err error) {
 		if err != nil {
 			continue
 		}
-		log.Println("Kraken balance XBT")
-		log.Println(krakenBalanceStringXBT)
+		log.Println("Kraken balance XBT: ", krakenBalanceStringXBT)
 		krakenBalanceFloatXBT, _ := strconv.ParseFloat(krakenBalanceStringXBT, 64)
 
 		// Get our onChain balance in SAT
-		Balance, err := lightning.GetBalance()
+		balance, err := lightning.GetBalance()
 		if err != nil {
-			log.Println("Unexpected error fetching on-chain balance")
-			log.Println(err)
+			log.Println("Unexpected error fetching on-chain balance: ", err)
 		}
-		log.Println("Onchain balance SAT")
-		log.Println(Balance)
+		log.Println("Onchain balance SAT: ", balance)
 
-		totalOnChainBalance, _ := strconv.Atoi(Balance.TotalBalance)
+		totalOnChainBalance, _ := strconv.Atoi(balance.TotalBalance)
 
 		if (krakenBalanceFloatXBT*100000000 + float64(totalOnChainBalance)) > float64(minLoopSize) {
 			// Try to withdraw all Kraken BTC because operator balance > liq amount
@@ -143,17 +133,13 @@ func looper() (err error) {
 			fmt.Printf("Kraken withdrawal successful: %+v\n", result)
 		}
 	}
-
-	return nil
 }
 
 // use godot package to load/read the .env file and
 // return the value of the key
 func GoDotEnvVariable(key string) string {
-
 	// load .env file
 	err := godotenv.Load(".env")
-
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
