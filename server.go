@@ -23,6 +23,8 @@ var (
 	krakenAmtXBTmax, _         = strconv.ParseFloat(goDotEnvVariable("KRAKEN_OP_MAX_BTC"), 64)
 	krakenWithdrawAmtXBTmin, _ = strconv.ParseFloat(goDotEnvVariable("KRAKEN_WITHDRAW_BTC_MIN"), 64)
 	maxLiqFeePpm, _            = strconv.ParseFloat(goDotEnvVariable("MAX_LIQ_FEE_PPM"), 64)
+
+	btcToSats = 100000000
 )
 
 func main() {
@@ -50,7 +52,7 @@ func looper() (err error) {
 			}
 			if totalBalance > minLoopSize {
 				log.Println("Opening channel to Deezy")
-				resp, err := lightning.CreateChannel(deezyPeer, totalBalance-500000) // leave 500000 cushion
+				resp, err := lightning.CreateChannel(deezyPeer, totalBalance-50000) // leave 50000 cushion
 				if err != nil {
 					log.Println("Error opening channel: ", err)
 					continue
@@ -128,9 +130,9 @@ func looper() (err error) {
 		}
 		log.Println("Onchain balance SAT: ", balance)
 
-		totalOnChainBalance, _ := strconv.Atoi(balance.TotalBalance)
+		totalOnChainBalance, _ := strconv.Atoi(balance.TotalBalance) // in sats
 
-		if (krakenBalanceFloatXBT*100000000+float64(totalOnChainBalance)) > float64(minLoopSize) && krakenBalanceFloatXBT > krakenWithdrawAmtXBTmin {
+		if (krakenBalanceFloatXBT*float64(btcToSats)+float64(totalOnChainBalance)) > float64(minLoopSize) && krakenBalanceFloatXBT > krakenWithdrawAmtXBTmin {
 			// Try to withdraw all Kraken BTC because operator balance > liq amount
 			result, err := kraken.Withdraw(krakenBalanceStringXBT)
 			if err != nil {
