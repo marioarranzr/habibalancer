@@ -10,14 +10,11 @@ import (
 )
 
 func IsChannelOpen(peer string) (status bool) {
-	ChannelExists, err := lightning.ListChannels(peer)
+	channelExists, err := lightning.ListChannels(peer)
 	if err != nil {
 		return false
 	}
-	if ChannelExists.Channels == nil {
-		return false
-	}
-	return true
+	return channelExists.Channels != nil
 }
 
 // Closes a channel to Deezy.io when provided a channel point - returns response body as a string
@@ -40,7 +37,6 @@ func CloseChannel(chanPoint string) (string, error) {
 }
 
 func sendPostRequest(endpoint string, payload string) (*http.Response, error) {
-
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -48,7 +44,7 @@ func sendPostRequest(endpoint string, payload string) (*http.Response, error) {
 	client := &http.Client{
 		Transport: tr,
 	}
-	var jsonStr = []byte(payload)
+	jsonStr := []byte(payload)
 
 	req, err := http.NewRequest("POST", "https://api.deezy.io/"+endpoint, bytes.NewBuffer(jsonStr))
 	if err != nil {
