@@ -13,6 +13,9 @@ func CreateChannel(peer string, amount int) (string, error) {
 	peerUrl := base64.URLEncoding.EncodeToString(peerHex)
 
 	resp, err := sendPostRequest("v1/channels", `{"node_pubkey":"`+peerUrl+`","sat_per_vbyte":"1","spend_unconfirmed":true,"private":false,"local_funding_amount":"`+strconv.Itoa(amount)+`"}`)
+	if err != nil {
+		return "", err
+	}
 
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -36,7 +39,7 @@ type ChannelResponse struct {
 	RemoteBalance string `json:"remote_balance"`
 }
 
-func ListChannels(peer string) (channels ChannelsResponse, err error) {
+func ListChannels(peer string) (ChannelsResponse, error) {
 	peerHex, _ := hex.DecodeString(peer)
 	peerUrl := base64.URLEncoding.EncodeToString(peerHex)
 	prefix := ""
@@ -44,13 +47,16 @@ func ListChannels(peer string) (channels ChannelsResponse, err error) {
 		prefix = "?peer="
 	}
 
-	resp, err := sendGetRequest("v1/channels" + prefix + peerUrl)
+	channels := ChannelsResponse{}
 
+	resp, err := sendGetRequest("v1/channels" + prefix + peerUrl)
+	if resp == nil {
+		return channels, err
+	}
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return channels, err
 	}
-	channels = ChannelsResponse{}
 	json.Unmarshal(bodyBytes, &channels)
 
 	return channels, err
