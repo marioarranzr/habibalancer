@@ -56,7 +56,6 @@ func looper() (err error) {
 					continue
 				}
 				log.Println("Channel Opened Successfully!: ", resp)
-
 			}
 		} else {
 			// Check if our open channel with Deezy's local balance is less than minimum close satoshis
