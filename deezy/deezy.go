@@ -4,17 +4,20 @@ import (
 	"bytes"
 	"crypto/tls"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 
 	"github.com/habibitcoin/habibalancer/lightning"
+	"github.com/joho/godotenv"
 )
 
-func IsChannelOpen(peer string) (status bool) {
-	channelExists, err := lightning.ListChannels(peer)
+func IsChannelOpen() (status bool) {
+	ChannelExists, err := lightning.ListChannels(goDotEnvVariable("DEEZY_PEER"))
 	if err != nil {
 		return false
 	}
-	return channelExists.Channels != nil
+	return len(ChannelExists.Channels) > 0
 }
 
 // Closes a channel to Deezy.io when provided a channel point - returns response body as a string
@@ -58,4 +61,16 @@ func sendPostRequest(endpoint string, payload string) (*http.Response, error) {
 	}
 
 	return resp, nil
+}
+
+// use godot package to load/read the .env file and
+// return the value of the key
+func goDotEnvVariable(key string) string {
+	// load .env file
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Println("Error loading .env file")
+	}
+
+	return os.Getenv(key)
 }

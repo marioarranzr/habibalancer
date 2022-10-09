@@ -15,14 +15,14 @@ import (
 )
 
 var (
-	deezyPeer         = GoDotEnvVariable("DEEZY_PEER")
-	minLoopSize, _    = strconv.Atoi(GoDotEnvVariable("LOOP_SIZE_MIN_SAT"))
-	localAmountMin, _ = strconv.Atoi(GoDotEnvVariable("LOCAL_AMOUNT_MIN_SAT"))
+	deezyPeer         = goDotEnvVariable("DEEZY_PEER")
+	minLoopSize, _    = strconv.Atoi(goDotEnvVariable("LOOP_SIZE_MIN_SAT"))
+	localAmountMin, _ = strconv.Atoi(goDotEnvVariable("LOCAL_AMOUNT_MIN_SAT"))
 
-	krakenAmtXBTmin, _         = strconv.ParseFloat(GoDotEnvVariable("KRAKEN_OP_MIN_BTC"), 64)
-	krakenAmtXBTmax, _         = strconv.ParseFloat(GoDotEnvVariable("KRAKEN_OP_MAX_BTC"), 64)
-	krakenWithdrawAmtXBTmin, _ = strconv.ParseFloat(GoDotEnvVariable("KRAKEN_WITHDRAW_BTC_MIN"), 64)
-	maxLiqFeePpm, _            = strconv.ParseFloat(GoDotEnvVariable("MAX_LIQ_FEE_PPM"), 64)
+	krakenAmtXBTmin, _         = strconv.ParseFloat(goDotEnvVariable("KRAKEN_OP_MIN_BTC"), 64)
+	krakenAmtXBTmax, _         = strconv.ParseFloat(goDotEnvVariable("KRAKEN_OP_MAX_BTC"), 64)
+	krakenWithdrawAmtXBTmin, _ = strconv.ParseFloat(goDotEnvVariable("KRAKEN_WITHDRAW_BTC_MIN"), 64)
+	maxLiqFeePpm, _            = strconv.ParseFloat(goDotEnvVariable("MAX_LIQ_FEE_PPM"), 64)
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 func looper() (err error) {
 	for {
 		// Step 1: Find if we have a channel opened with Deezy
-		chanExists := deezy.IsChannelOpen(deezyPeer)
+		chanExists := deezy.IsChannelOpen()
 		log.Println("chanExists: ", chanExists)
 
 		// Step 2:  If we do not have an open channel, see if we have enough money to open one
@@ -45,6 +45,9 @@ func looper() (err error) {
 
 			// Step 3: Open Channel to Danny
 			totalBalance, _ := strconv.Atoi(balance.TotalBalance)
+			if totalBalance > 16500000 {
+				totalBalance = 16500000 // dont use wumbo channels
+			}
 			if totalBalance > minLoopSize {
 				log.Println("Opening channel to Deezy")
 				resp, err := lightning.CreateChannel(deezyPeer, totalBalance-500000) // leave 500000 cushion
@@ -141,11 +144,11 @@ func looper() (err error) {
 
 // use godot package to load/read the .env file and
 // return the value of the key
-func GoDotEnvVariable(key string) string {
+func goDotEnvVariable(key string) string {
 	// load .env file
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Println("Error loading .env file")
 	}
 
 	return os.Getenv(key)
